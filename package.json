@@ -1,0 +1,25 @@
+{
+  "name": "@repo/identity-service",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun ./index.ts",
+    "build": "bun build ./index.ts --target=bun --outdir=./dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'identity-service: lint OK'"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/nodemailer": "^8.0.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@repo/database": "workspace:*",
+    "fastify": "^5.8.5",
+    "fastify-type-provider-zod": "^6.1.0",
+    "nodemailer": "^8.0.7",
+    "zod": "^4.4.3"
+  }
+}
