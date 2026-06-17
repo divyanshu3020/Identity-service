@@ -9,7 +9,7 @@ export async function authRoutes(app: FastifyInstance) {
   /**
    * POST /api/auth/start
    * Start OTP authentication flow
-   * @body email - User email address
+   * @body email -  User email address
    */
   typedApp.post(
     "/start",
