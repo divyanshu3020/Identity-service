@@ -1,38 +1,43 @@
-# docker run -e PORT=4000 -e NODE_ENV=production -e SMTP_HOST=smtp.example.com your-image
-# syntax=docker/dockerfile:1
-
-ARG BUN_VERSION=alpine
-FROM oven/bun:${BUN_VERSION} AS builder
+# Context is the monorepo root
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
-# Copy dependency manifests first to leverage Docker layer caching
-COPY package.json tsconfig.json ./
+# Copy root configurations
+COPY package.json bun.lockb turbo.json ./
 
-# Copy application sources
-COPY index.ts ./
-COPY src ./src
+# Copy shared database package and the specific service
+COPY packages/database ./packages/database
+COPY services/identity-service ./services/identity-service
 
-# Install ALL dependencies (including devDependencies needed for the build step)
-RUN bun install --ignore-scripts
+# Install all dependencies (frozen lockfile to ensure deterministic installation)
+RUN bun install --frozen-lockfile
 
-# Build the service into an optimized output
-RUN bun build ./index.ts --target=bun --outdir=./dist
+# Generate Prisma Client for the database package
+RUN cd packages/database && bun run generate
 
-# Runtime stage
-FROM oven/bun:${BUN_VERSION} AS runner
+# Build the specific service
+RUN cd services/identity-service && bun run build
+
+# Final lightweight stage
+FROM oven/bun:1-slim
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Copy the monorepo node_modules (which includes installed prisma binaries)
+COPY --from=builder /app/node_modules ./node_modules
 
-# Copy application manifest and the compiled dist folder
-COPY package.json ./
-COPY --from=builder /app/dist ./dist
+# Copy the shared database package (contains the generated Prisma client)
+COPY --from=builder /app/packages/database ./packages/database
 
-# Install ONLY production dependencies at runtime
-RUN bun install --production --ignore-scripts
+# Copy the built service artifacts
+COPY --from=builder /app/services/identity-service/package.json ./services/identity-service/package.json
+COPY --from=builder /app/services/identity-service/dist ./services/identity-service/dist
 
-EXPOSE 4000
+WORKDIR /app/services/identity-service
 
-CMD ["bun", "./dist/index.js"]
+# Expose standard port for fastify applications
+EXPOSE 3000
+
+# Start the built application
+CMD ["bun", "run", "./dist/index.js"]
