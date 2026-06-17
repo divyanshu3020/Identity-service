@@ -7,7 +7,7 @@ export const AUTH_CONSTANTS = {
   EMAIL_SUBJECT: "Your OTP for Parking Service",
 };
 
-export const ERROR_MESSAGES = {
+export const ERROR_MESSAGES =  {
   INVALID_EMAIL: "Invalid email format",
   INVALID_OTP: "Invalid OTP provided",
   OTP_EXPIRED: "OTP has expired",
