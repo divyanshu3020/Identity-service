@@ -1,5 +1,7 @@
 import fastify from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import {
   validatorCompiler,
   serializerCompiler,
@@ -9,7 +11,28 @@ import { router } from "./routes/index";
 
 export async function createApp() {
   const app = fastify({
-    logger: config.isDevelopment,
+    logger: config.isDevelopment
+      ? {
+          transport: {
+            target: "pino-pretty",
+            options: {
+              translateTime: "HH:MM:ss Z",
+              ignore: "pid,hostname",
+            },
+          },
+        }
+      : true, // Use default pino JSON logging in production
+  });
+
+  // Register Helmet for Security Headers
+  await app.register(helmet, {
+    global: true,
+  });
+
+  // Register Global Rate Limiter
+  await app.register(rateLimit, {
+    max: 100, // default limit
+    timeWindow: "1 minute",
   });
 
   // Setup Zod type providers

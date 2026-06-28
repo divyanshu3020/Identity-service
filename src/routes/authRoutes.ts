@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authController } from "../controllers/authController";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { requireApiKey } from "../middleware/authMiddleware";
 
 export async function authRoutes(app: FastifyInstance) {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();
@@ -42,6 +43,13 @@ export async function authRoutes(app: FastifyInstance) {
             message: z.string(),
             code: z.string().optional(),
           }),
+        },
+      },
+      preHandler: [requireApiKey],
+      config: {
+        rateLimit: {
+          max: 3,
+          timeWindow: "5 minutes",
         },
       },
     },
@@ -94,6 +102,13 @@ export async function authRoutes(app: FastifyInstance) {
             message: z.string(),
             code: z.string().optional(),
           }),
+        },
+      },
+      preHandler: [requireApiKey],
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: "1 minute",
         },
       },
     },
