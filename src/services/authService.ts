@@ -14,7 +14,7 @@ import { db } from "@repo/database";
 export const authService = {
   async startAuth(email: string): Promise<AuthResponse | ErrorResponse> {
     try {
-      // Validate email format 
+      // Validate email format  
       if (!isValidEmail(email)) {
         return {
           success: false,
