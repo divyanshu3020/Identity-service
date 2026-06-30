@@ -17,7 +17,7 @@ export async function authRoutes(app: FastifyInstance) {
     {
       schema: {
         body: z.object({
-          email: z.string().email("Invalid email address"),
+          email: z.email("Invalid email address"),
         }),
         response: {
           200: z.object({
