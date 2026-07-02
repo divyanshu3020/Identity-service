@@ -4,7 +4,7 @@ import { AUTH_CONSTANTS } from "../constants/auth";
 
 let transporter: Transporter | null = null;
 
-const initializeTransporter = (): Transporter => {
+const initializeTransporter = async (): Promise<Transporter> => {
   if (transporter) return transporter;
 
   // For development, using Ethereal Email (nodemailer test account)
@@ -21,13 +21,24 @@ const initializeTransporter = (): Transporter => {
     });
   } else {
     // Development: Ethereal test account
+    let user = process.env.ETHEREAL_USER;
+    let pass = process.env.ETHEREAL_PASS;
+
+    if (!user || !pass || user === "your-ethereal-user") { 
+      console.log("[DEV] Generating new Ethereal test account...");
+      const testAccount = await nodemailer.createTestAccount();
+      user = testAccount.user;
+      pass = testAccount.pass;
+      console.log(`[DEV] Ethereal credentials generated. User: ${user}`);
+    }
+
     transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
       secure: false,
       auth: {
-        user: process.env.ETHEREAL_USER || "test@ethereal.email",
-        pass: process.env.ETHEREAL_PASS || "test-password",
+        user,
+        pass,
       },
     });
   }
@@ -40,7 +51,7 @@ export const sendOTPEmail = async (
   otp: string,
 ): Promise<boolean> => {
   try {
-    const transport = initializeTransporter();
+    const transport = await initializeTransporter();
 
     const mailOptions = {
       from: AUTH_CONSTANTS.EMAIL_FROM,
@@ -58,7 +69,13 @@ export const sendOTPEmail = async (
       text: `Your OTP is: ${otp}. It will expire in ${AUTH_CONSTANTS.OTP_EXPIRY_MINUTES} minutes.`,
     };
 
-    await transport.sendMail(mailOptions);
+    const info = await transport.sendMail(mailOptions);
+    
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[DEV] Email sent to Ethereal!");
+      console.log("[DEV] Preview URL: " + nodemailer.getTestMessageUrl(info));
+    }
+    
     return true;
   } catch (error) {
     console.error("Email send error:", error);

@@ -9,7 +9,7 @@ import {
 import { sendOTPEmail } from "../utils/email";
 import type { OTPSession, AuthResponse, ErrorResponse } from "../types/auth";
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "../constants/auth";
-import { db } from "@repo/database";
+import { db } from "../config/db";
 
 export const authService = {
   async startAuth(email: string): Promise<AuthResponse | ErrorResponse> {
@@ -160,19 +160,29 @@ export const authService = {
 
       // Verify OTP
       if (session.otp !== otp) {
-        await db.oTPSession.update({
-          where: { id: session.id },
-          data: { attempts: session.attempts + 1 },
-        });
-        const remainingAttempts = 3 - (session.attempts + 1);
-        return {
-          success: false,
-          message:
-            remainingAttempts > 0
-              ? `Invalid OTP. You have ${remainingAttempts} attempt(s) remaining.`
-              : "Maximum attempts exceeded. Please request a new OTP.",
-          code: "INVALID_OTP",
-        };
+        const newAttempts = session.attempts + 1;
+        const remainingAttempts = 3 - newAttempts;
+
+        if (remainingAttempts <= 0) {
+          await db.oTPSession.delete({
+            where: { id: session.id },
+          });
+          return {
+            success: false,
+            message: "Maximum OTP verification attempts exceeded. Please request a new OTP.",
+            code: "MAX_ATTEMPTS_EXCEEDED",
+          };
+        } else {
+          await db.oTPSession.update({
+            where: { id: session.id },
+            data: { attempts: newAttempts },
+          });
+          return {
+            success: false,
+            message: `Invalid OTP. You have ${remainingAttempts} attempt(s) remaining.`,
+            code: "INVALID_OTP",
+          };
+        }
       }
 
       // OTP verified successfully
