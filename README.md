@@ -1,122 +1,78 @@
 # Identity Service (Open-Source Email OTP Service)
 
-A highly secure, incredibly fast, and lightweight Email OTP (One-Time Password) identity service. Built with Fastify, Bun, and Prisma, this service is designed to be easily integrated into any new or existing project by developers. 
+A highly secure, incredibly fast, and lightweight Email OTP (One-Time Password) identity service. Built with Fastify, Bun, and Prisma, this service is designed to be easily integrated into any backend infrastructure as a plug-and-play microservice.
 
 It handles the heavy lifting of:
 - Sending OTP emails
 - Tracking OTP expiration and maximum attempts (3 times)
-- Securing endpoints via API Key authentication
 - Protecting against brute-force and DDoS via strict Rate Limiting
 - Emitting standard security headers using Helmet
 
+*Note: API Key management and overall system authentication is assumed to be handled by your API Gateway (e.g., Nginx, Kong, AWS API Gateway).*
+
 ---
 
-## 🚀 Getting Started (A to Z Setup)
+## 🚀 Getting Started (Plug-and-Play Setup)
+
+This service is fully containerized and decoupled. You can spin it up instantly using Docker Compose.
 
 ### 1. Prerequisites
-- **Bun**: Make sure you have [Bun](https://bun.sh/) installed.
-- **PostgreSQL**: A running PostgreSQL database.
+- **Docker & Docker Compose** installed on your machine.
 
 ### 2. Installation
-
-Clone the repository and install dependencies:
-
+Clone this repository and navigate to the `identity-service` folder.
 ```bash
-bun install
+# Start the database and the identity service
+docker-compose up -d --build
 ```
-
-### 3. Environment Variables
-
-Create a `.env` file in the root of the project (or copy from `.env.example` if it exists) and fill it out. Here is what is required:
-
-```env
-# Server configuration
-PORT=4000
-NODE_ENV=development
-API_PREFIX=/api
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-
-# Database Configuration (Make sure this exists in the root or @repo/database)
-DATABASE_URL=postgresql://user:password@localhost:5432/mydb?schema=public
-
-# Email sender address
-EMAIL_FROM=noreply@parking.com
-
-# SMTP settings
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your-smtp-username
-SMTP_PASS=your-smtp-password
-```
-
-### 4. Database Setup
-
-Push the database schema to create the required tables (`User`, `OTPSession`, `ApiKey`):
-
-```bash
-cd packages/database
-bunx prisma db push
-bunx prisma generate
-```
-
-### 5. Start the Server
-
-```bash
-# From the identity-service directory
-bun run dev
-```
+*That's it!* The `docker-compose` setup will automatically pull a PostgreSQL database, run `prisma db push` to generate the schema, and start the Fastify server.
 
 ---
 
-## 🔑 Generating your first API Key
+## 📍 Where is it exposed?
 
-Before any external app can use the OTP endpoints, you need an API key. This prevents random people on the internet from abusing your SMTP server as a spam relay.
+The service runs locally on port `4000`. 
+- **Internal API Base:** `http://localhost:4000/api`
+- **Health Check:** `http://localhost:4000/health`
 
-To generate a key, make a POST request to the admin endpoint (usually done via cURL or Postman when setting up):
+*Note: The bundled PostgreSQL database is exposed on host port `5433` to prevent conflicts with your existing local databases.*
 
-**Request:**
+---
+
+## 🩺 Checking Service Health
+
+To verify that the service is running correctly, you can ping the health check endpoint:
+
+**Command:**
 ```bash
-curl -X POST http://localhost:4000/api/admin/keys/generate \
-  -H "Content-Type: application/json" \
-  -d '{"name": "My Main Web App"}'
+curl http://localhost:4000/health
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "message": "API Key generated successfully. Please save this key now as it cannot be retrieved again.",
-  "data": {
-    "id": "cuid_xxxx",
-    "name": "My Main Web App",
-    "apiKey": "sk_your_base64_secret_key"
-  }
+  "status": "healthy",
+  "timestamp": "2026-07-02T12:00:00.000Z",
+  "service": "identity-service"
 }
 ```
-
-> **⚠️ CRITICAL:** Save the `apiKey` string! It is only shown once. It is hashed in the database and cannot be recovered if lost.
 
 ---
 
 ## 📚 API Reference
 
-All requests to the `/auth/*` endpoints **MUST** include your API Key in the headers.
-
-**Required Header:**
-`x-api-key: <your-api-key>`
-
 ### 1. Request OTP (Start Auth)
 
-Sends a 6-digit OTP to the user's email address. 
+Sends a 6-digit OTP to the user's email address. If no SMTP credentials are provided in `.env`, the system will automatically generate a mock Ethereal test account and print the email preview URL to your console!
 
 - **Endpoint:** `POST /api/auth/start`
-- **Rate Limit:** Max 3 requests per 5 minutes per IP address.
+- **Rate Limit:** Max 100 requests per 5 minutes per IP address.
 
-**Request Body:**
-```json
-{
-  "email": "user@example.com"
-}
+**Example Command:**
+```bash
+curl -X POST http://localhost:4000/api/auth/start \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
 ```
 
 **Success Response (200 OK):**
@@ -128,7 +84,7 @@ Sends a 6-digit OTP to the user's email address.
 }
 ```
 
-**Error Response (400 Bad Request - Active Session Exists):**
+**Error Response (400 Bad Request):**
 ```json
 {
   "success": false,
@@ -144,13 +100,11 @@ Verifies the 6-digit OTP. The user has a maximum of 3 attempts before the workfl
 - **Endpoint:** `POST /api/auth/verify`
 - **Rate Limit:** Max 30 requests per 1 minute per IP address.
 
-**Request Body:**
-```json
-{
-  "phoneNumber": "1234567890",
-  "otp": "123456",
-  "workflowId": "wf_xxxxx"
-}
+**Example Command:**
+```bash
+curl -X POST http://localhost:4000/api/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber": "1234567890", "otp": "123456", "workflowId": "wf_xxxxx"}'
 ```
 
 **Success Response (200 OK):**
@@ -166,7 +120,7 @@ Verifies the 6-digit OTP. The user has a maximum of 3 attempts before the workfl
 }
 ```
 
-**Error Response (400 Bad Request - Invalid OTP):**
+**Error Responses (400 Bad Request):**
 ```json
 {
   "success": false,
@@ -175,31 +129,9 @@ Verifies the 6-digit OTP. The user has a maximum of 3 attempts before the workfl
 }
 ```
 
-**Error Response (400 Bad Request - Expired/Not Found):**
-```json
-{
-  "success": false,
-  "message": "Invalid workflow ID. The OTP session may have expired or does not exist.",
-  "code": "WORKFLOW_NOT_FOUND"
-}
-```
-
-### 3. Missing/Invalid API Key Errors
-
-If a developer forgets the `x-api-key` header or provides a bad one:
-
-**Error Response (401 Unauthorized):**
-```json
-{
-  "success": false,
-  "message": "Missing API Key in headers (x-api-key)",
-  "code": "UNAUTHORIZED"
-}
-```
-
 ---
 
 ## 🛡️ Security Architecture
 - **Helmet:** Automatically drops malicious scripts and prevents clickjacking using standard HTTP headers.
-- **Argon2/SHA256:** API Keys are hashed securely via `crypto/sha256` so database leaks do not compromise active sessions.
 - **Rate Limiting:** Network-level request dropping via `@fastify/rate-limit` prevents Brute Force and DDoS attacks from ever reaching the Prisma ORM.
+- **Un-opinionated Gateway Support:** Stripped of internal API Key handling so it can cleanly sit behind your robust API Gateway.
