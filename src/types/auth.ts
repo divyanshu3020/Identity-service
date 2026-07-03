@@ -21,6 +21,7 @@ export interface AuthResponse {
   success: boolean;
   message: string;
   workflowId?: string;
+  expiresIn?: number;
   data?: Record<string, unknown>;
 }
 

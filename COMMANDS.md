@@ -1,149 +1,67 @@
-# Identity Service - Commands Reference
+# 🛠️ Useful Commands Reference
 
-## Current Commands
+Here are some helpful commands you can use when working with the Identity Service:
 
-### Development
+## Docker Commands
+
+### Start the Service
 ```bash
-bun run dev
-```
-Starts FastAPI development server on PORT 3000 (default). Hot-reloads on file changes.
+# Start the database and service in the background
+docker-compose up -d
 
-### Dependencies
+# Start and force a rebuild of the image (useful if you changed code)
+docker-compose up -d --build
+```
+
+### Check Status & Logs
 ```bash
-bun install
+# See which containers are running
+docker-compose ps
+
+# View all logs continuously
+docker-compose logs -f
+
+# View logs for the identity service only
+docker logs identity-service-identity-service-1 -f
+
+# View logs for the database only
+docker logs identity-service-identity-postgres-1 -f
 ```
-Installs all dependencies from package.json
 
-## Future Commands (To Be Added)
-
-### Build & Production
+### Stop the Service
 ```bash
-bun build ./index.ts
-```
-Compiles TypeScript for production deployment.
+# Stop the containers without removing them
+docker-compose stop
 
+# Stop and remove the containers, networks, and volumes (Fresh start)
+docker-compose down -v
+```
+
+## Useful Shell Commands (Troubleshooting)
+
+### Fix Line Endings (Windows -> Linux)
+If you are developing on Windows and the Docker container fails to start with a `/usr/local/bin/docker-entrypoint.sh: exec: ./start.sh: not found` error, it means your line endings are wrong. Run this to fix `start.sh`:
 ```bash
-bun run build
+bun -e "const fs = require('fs'); fs.writeFileSync('start.sh', fs.readFileSync('start.sh', 'utf8').replace(/\r\n/g, '\n'));"
 ```
-(Once build script is added to package.json)
 
-### Testing
+## API Testing (cURL)
+
+### Health Check
 ```bash
-bun test
+curl http://localhost:4000/health
 ```
-Runs all tests. Add test files with `.test.ts` extension.
 
+### Send OTP
 ```bash
-bun run test:watch
+curl -X POST http://localhost:4000/api/auth/start \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
 ```
-Runs tests in watch mode (reruns on file changes).
 
+### Verify OTP
 ```bash
-bun run test:coverage
+curl -X POST http://localhost:4000/api/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber": "1234567890", "otp": "123456", "workflowId": "wf_xxxxx"}'
 ```
-Shows code coverage report for tests.
-
-### Linting & Formatting
-```bash
-bunx eslint src/
-```
-Lints TypeScript code for errors and style issues.
-
-```bash
-bunx prettier --write src/
-```
-Formats code to match style standards.
-
-```bash
-bun run lint
-```
-(Once lint script is added to package.json)
-
-### Type Checking
-```bash
-bun run type-check
-```
-Checks TypeScript types without building. Useful for catching errors early.
-
-### API Documentation
-```bash
-bun run docs
-```
-(Future) Generates API documentation from route schemas.
-
-### Database
-```bash
-bun run db:migrate
-```
-(Future) Runs database migrations. Executed before deployment.
-
-```bash
-bun run db:seed
-```
-(Future) Seeds database with test data.
-
-## Environment Variables
-
-Create `.env` or `.env.local` file:
-```
-PORT=3000
-NODE_ENV=development
-API_PREFIX=/api
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-EMAIL_FROM=noreply@parking.com
-ETHEREAL_USER=your-ethereal-user@ethereal.email
-ETHEREAL_PASS=your-ethereal-password
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your-smtp-user
-SMTP_PASS=your-smtp-password
-SMTP_SECURE=false
-DATABASE_URL=postgresql://user:password@host:5432/parking_db
-```
-
-## API Endpoints
-
-### Authentication Routes (`/api/auth`)
-
-**POST /start**
-- Starts OTP authentication flow
-- Request: `{ email: "user@example.com" }`
-- Response: `{ success: true, workflowId: "...", message: "OTP sent" }`
-
-**POST /verify**
-- Verifies OTP and completes authentication
-- Request: `{ phoneNumber: "+1234567890", otp: "123456", workflowId: "..." }`
-- Response: `{ success: true, data: { email, phoneNumber, workflowId } }`
-
-## Project Structure
-
-```
-src/
-├── app.ts              # Express/Fastify setup
-├── config/
-│   └── env.ts          # Environment config
-├── constants/
-│   └── auth.ts         # Auth constants & messages
-├── controllers/
-│   └── authController.ts
-├── middleware/         # Custom middleware
-├── routes/
-│   ├── authRoutes.ts   # Auth endpoint definitions
-│   └── index.ts        # Route registration
-├── services/
-│   └── authService.ts  # Business logic
-├── types/
-│   └── auth.ts         # TypeScript types
-└── utils/
-    ├── email.ts        # Email sending
-    └── otp.ts          # OTP generation & validation
-```
-
-## Useful Tips
-
-- Use `NODE_ENV=development` for local testing with Ethereal email
-- Use `NODE_ENV=production` to use real SMTP credentials
-- OTP expires in 10 minutes (configurable in `AUTH_CONSTANTS`)
-- Max 3 OTP verification attempts per session
-- All errors return structured responses with `code` field for error handling
-- Zod schemas validate all request/response data

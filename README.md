@@ -18,6 +18,7 @@ This service is fully containerized and decoupled. You can spin it up instantly 
 
 ### 1. Prerequisites
 - **Docker & Docker Compose** installed on your machine.
+- 💡 *Tip: Check out [commands.md](file:///e:/coding/parking/services/identity-service/commands.md) for a cheat sheet of useful Docker and shell commands!*
 
 ### 2. Installation
 Clone this repository and navigate to the `identity-service` folder.
@@ -80,7 +81,8 @@ curl -X POST http://localhost:4000/api/auth/start \
 {
   "success": true,
   "message": "OTP sent successfully. Check your email.",
-  "workflowId": "wf_xxxxx"
+  "workflowId": "wf_xxxxx",
+  "expiresIn": 600
 }
 ```
 

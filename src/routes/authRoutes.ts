@@ -23,6 +23,7 @@ export async function authRoutes(app: FastifyInstance) {
             success: z.boolean(),
             message: z.string(),
             workflowId: z.string().optional(),
+            expiresIn: z.number().optional(),
           }),
           400: z.object({
             success: z.literal(false),

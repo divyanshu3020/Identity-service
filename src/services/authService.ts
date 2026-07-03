@@ -82,6 +82,7 @@ export const authService = {
         success: true,
         message: "OTP sent successfully. Check your email.",
         workflowId,
+        expiresIn: Math.round((expiresAt.getTime() - Date.now()) / 1000),
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
