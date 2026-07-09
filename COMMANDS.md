@@ -63,5 +63,5 @@ curl -X POST http://localhost:4000/api/auth/start \
 ```bash
 curl -X POST http://localhost:4000/api/auth/verify \
   -H "Content-Type: application/json" \
-  -d '{"phoneNumber": "1234567890", "otp": "123456", "workflowId": "wf_xxxxx"}'
+  -d '{"phoneNumber": "1234567890", "otp": "123456", "email": "user@example.com"}'
 ```

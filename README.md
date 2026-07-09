@@ -81,7 +81,6 @@ curl -X POST http://localhost:4000/api/auth/start \
 {
   "success": true,
   "message": "OTP sent successfully. Check your email.",
-  "workflowId": "wf_xxxxx",
   "expiresIn": 600
 }
 ```
@@ -97,7 +96,7 @@ curl -X POST http://localhost:4000/api/auth/start \
 
 ### 2. Verify OTP
 
-Verifies the 6-digit OTP. The user has a maximum of 3 attempts before the workflow ID is permanently invalidated.
+Verifies the 6-digit OTP. The user has a maximum of 3 attempts before the OTP session is permanently invalidated.
 
 - **Endpoint:** `POST /api/auth/verify`
 - **Rate Limit:** Max 30 requests per 1 minute per IP address.
@@ -106,7 +105,7 @@ Verifies the 6-digit OTP. The user has a maximum of 3 attempts before the workfl
 ```bash
 curl -X POST http://localhost:4000/api/auth/verify \
   -H "Content-Type: application/json" \
-  -d '{"phoneNumber": "1234567890", "otp": "123456", "workflowId": "wf_xxxxx"}'
+  -d '{"phoneNumber": "1234567890", "otp": "123456", "email": "user@example.com"}'
 ```
 
 **Success Response (200 OK):**
@@ -116,8 +115,7 @@ curl -X POST http://localhost:4000/api/auth/verify \
   "message": "OTP verified successfully",
   "data": {
     "email": "user@example.com",
-    "phoneNumber": "1234567890",
-    "workflowId": "wf_xxxxx"
+    "phoneNumber": "1234567890"
   }
 }
 ```
