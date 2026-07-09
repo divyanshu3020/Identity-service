@@ -22,7 +22,6 @@ export async function authRoutes(app: FastifyInstance) {
           200: z.object({
             success: z.boolean(),
             message: z.string(),
-            workflowId: z.string().optional(),
             expiresIn: z.number().optional(),
           }),
           400: z.object({
@@ -61,7 +60,7 @@ export async function authRoutes(app: FastifyInstance) {
    * Verify OTP and complete authentication
    * @body phoneNumber - User phone number
    * @body otp - 6-digit OTP
-   * @body workflowId - Workflow ID from start auth
+   * @body email - User email address
    */
   typedApp.post(
     "/verify",
@@ -70,7 +69,7 @@ export async function authRoutes(app: FastifyInstance) {
         body: z.object({
           phoneNumber: z.string().min(7, "Invalid phone number"),
           otp: z.string().length(6, "OTP must be 6 digits"),
-          workflowId: z.string().min(1, "Workflow ID is required"),
+          email: z.string().email("Invalid email"),
         }),
         response: {
           200: z.object({
@@ -80,7 +79,6 @@ export async function authRoutes(app: FastifyInstance) {
               .object({
                 email: z.string(),
                 phoneNumber: z.string(),
-                workflowId: z.string(),
               })
               .optional(),
           }),

@@ -48,15 +48,15 @@ export const authController = {
 
   async verifyOTP(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { phoneNumber, otp, workflowId } = request.body as OTPVerifyRequest;
+      const { phoneNumber, otp, email } = request.body as OTPVerifyRequest;
 
       // Validate all required fields
       const missingFields = [];
       if (!phoneNumber)
         missingFields.push({ field: "phoneNumber", message: "Phone number is required" });
       if (!otp) missingFields.push({ field: "otp", message: "OTP is required" });
-      if (!workflowId)
-        missingFields.push({ field: "workflowId", message: "Workflow ID is required" });
+      if (!email)
+        missingFields.push({ field: "email", message: "email is required" });
 
       if (missingFields.length > 0) {
         return reply.status(400).send({
@@ -67,7 +67,7 @@ export const authController = {
         });
       }
 
-      const result = await authService.verifyOTP(workflowId, otp, phoneNumber);
+      const result = await authService.verifyOTP(email, otp, phoneNumber);
 
       if (!result.success) {
         return reply.status(400).send(result);

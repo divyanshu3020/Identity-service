@@ -5,14 +5,13 @@ export interface AuthRequest {
 export interface OTPVerifyRequest {
   phoneNumber: string;
   otp: string;
-  workflowId: string;
+  email: string;
 }
 
 export interface OTPSession {
   otp: string;
   email: string;
   phoneNumber: string;
-  workflowId: string;
   expiresAt: Date;
   attempts: number;
 }
@@ -20,7 +19,7 @@ export interface OTPSession {
 export interface AuthResponse {
   success: boolean;
   message: string;
-  workflowId?: string;
+  email?: string;
   expiresIn?: number;
   data?: Record<string, unknown>;
 }

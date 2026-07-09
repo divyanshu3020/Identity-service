@@ -44,7 +44,6 @@ export const authService = {
 
       // Generate OTP and workflow ID
       const otp = generateOTP();
-      const workflowId = generateWorkflowId();
       const expiresAt = calculateOTPExpiry();
 
       // Store OTP session in database
@@ -52,7 +51,6 @@ export const authService = {
         data: {
           otp,
           email,
-          workflowId,
           expiresAt,
           attempts: 0,
         },
@@ -81,7 +79,6 @@ export const authService = {
       return {
         success: true,
         message: "OTP sent successfully. Check your email.",
-        workflowId,
         expiresIn: Math.round((expiresAt.getTime() - Date.now()) / 1000),
       };
     } catch (error) {
@@ -96,16 +93,16 @@ export const authService = {
   },
 
   async verifyOTP(
-    workflowId: string,
+    email: string,
     otp: string,
     phoneNumber: string,
   ): Promise<AuthResponse | ErrorResponse> {
     try {
       // Validate inputs
-      if (!workflowId || !otp || !phoneNumber) {
+      if (!email || !otp || !phoneNumber) {
         return {
           success: false,
-          message: "Missing required fields: workflowId, otp, and phoneNumber",
+          message: "Missing required fields: email, otp, and phoneNumber",
           code: "MISSING_FIELDS",
         };
       }
@@ -122,15 +119,15 @@ export const authService = {
 
       // Get OTP session from database
       const session = await db.oTPSession.findUnique({
-        where: { workflowId },
+        where: { email },
       });
 
       if (!session) {
         return {
           success: false,
           message:
-            "Invalid workflow ID. The OTP session may have expired or does not exist.",
-          code: "WORKFLOW_NOT_FOUND",
+            "Invalid email. The OTP session may have expired or does not exist.",
+          code: "EMAIL_NOT_FOUND",
         };
       }
 
@@ -204,7 +201,6 @@ export const authService = {
       const userData = {
         email: user.email,
         phoneNumber: user.phoneNumber,
-        workflowId: session.workflowId,
       };
 
       // Clean up the session
